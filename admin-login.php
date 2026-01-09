@@ -1,31 +1,35 @@
 <?php
    session_start();
    error_reporting(1);
-   include('includes/config.php');
+   require 'db_connection.php';
    if($_SESSION['alogin']!=''){
 		$_SESSION['alogin']='';
    }
-   if(isset($_POST['login']))
-   {
-	   $uname=$_POST['username'];
-	   $password=md5($_POST['password']);
-	   
-		$sql ="SELECT UserName,Password, is_admin FROM users WHERE UserName='$uname' and Password='$password'";
-		$result = $dbh1->query($sql);
+   if (isset($_POST['login'])) {
 
-		if ($result->num_rows > 0) {
-				while($row = $result->fetch_array()) {
-				 $_SESSION['alogin']=$row[0];
-				 $_SESSION['is_admin']=$row[2];
-				}
-				header('Location: dashboard.php');
-		}
-	   else{
-		   $_SESSION['msgErreur'] = "Mauvais identifiant / mot de passe.";
-	   
-	   }
-   
-   }
+      $usernameOrEmail = trim($_POST['username'] ?? '');
+      $password = $_POST['password'] ?? '';
+  
+      if (empty($usernameOrEmail) || empty($password)) {
+          $_SESSION['msgErreur'] = "Tous les champs sont requis.";
+      } else {
+  
+          // Préparer et exécuter la requête
+          $stmt = $pdo->prepare("SELECT UserName, email, Password, is_admin FROM users WHERE UserName = ? OR email = ? LIMIT 1");
+          $stmt->execute([$usernameOrEmail, $usernameOrEmail]);
+          $user = $stmt->fetch();
+  
+          if ($user && password_verify($password, $user['Password'])) {
+              // Connexion réussie
+              $_SESSION['alogin'] = $user['UserName'];
+              $_SESSION['is_admin'] = $user['is_admin'];
+              header('Location: dashboard.php');
+              exit();
+          } else {
+              $_SESSION['msgErreur'] = "Mauvais identifiant / mot de passe.";
+          }
+      }
+  }
    
    ?>
 <!DOCTYPE html>
