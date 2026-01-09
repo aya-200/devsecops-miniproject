@@ -57,4 +57,37 @@ class RegisterTest extends TestCase
         $this->assertNotEmpty($user);
         $this->assertEquals($email, $user['email']);
     }
+
+    public function testEmailMustBeUnique()
+    {
+    $email = 'unique@test.com';
+
+    $this->pdo->prepare(
+        "DELETE FROM users WHERE email = ?"
+    )->execute([$email]);
+
+    $password = password_hash('Test123!', PASSWORD_DEFAULT);
+
+    $stmt1 = $this->pdo->prepare(
+        "INSERT INTO users (UserName, email, Password, is_admin)
+         VALUES (?, ?, ?, 0)"
+    );
+    $stmt1->execute(['user1', $email, $password]);
+
+    $this->expectException(PDOException::class);
+
+    $stmt2 = $this->pdo->prepare(
+        "INSERT INTO users (UserName, email, Password, is_admin)
+         VALUES (?, ?, ?, 0)"
+    );
+    $stmt2->execute(['user2', $email, $password]);
+    }
+
+    public function testWrongPassword()
+{
+    $password = password_hash('Correct123!', PASSWORD_DEFAULT);
+    $this->assertFalse(password_verify('Wrong123!', $password));
+}
+
+
 }
